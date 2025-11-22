@@ -1,0 +1,42 @@
+name: Android Release Build
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Find gradlew
+      id: find-gradlew
+      run: |
+        GRADLEW_PATH=$(find . -type f -name "gradlew" | head -n 1)
+        echo "GRADLEW_PATH=$GRADLEW_PATH" >> $GITHUB_ENV
+        chmod +x "$GRADLEW_PATH"
+
+    - name: Build Release APK
+      run: |
+        "$GRADLEW_PATH" assembleRelease
+
+    - name: Locate APK
+      run: |
+        echo "APK_PATH=$(find . -type f -name '*release.apk' | head -n 1)" >> $GITHUB_ENV
+
+    - name: Upload Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ env.APK_PATH }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
